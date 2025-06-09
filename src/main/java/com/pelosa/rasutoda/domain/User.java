@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "user")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseTimeEntity {
@@ -20,9 +20,9 @@ public class User extends BaseTimeEntity {
     private Long id;
 
     @Column(unique = true, nullable = false, length = 50)
-    private String loginID;
+    private String loginId;
 
-    @Column(unique = false, nullable = false, length = 50)
+    @Column(nullable = false, length = 50)
     private String username;
 
     @Column(unique = true, length = 50)
@@ -31,7 +31,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 150)
+    @Column(unique = true, nullable = false, length = 150)
     private String email;
 
     @Column(length = 20)
@@ -51,31 +51,24 @@ public class User extends BaseTimeEntity {
     private LocalDateTime lastLoginAt;
     private LocalDateTime deletedAt;
 
-    // User가 삭제되면 주소 정보도 함께 삭제 (Cascade)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<UserAddress> addresses = new ArrayList<>();
+    private final List<UserAddress> addresses = new ArrayList<>();
 
-    // User가 삭제되면 로그인 기록도 함께 삭제
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<LoginHistory> loginHistories = new ArrayList<>();
+    private final List<LoginHistory> loginHistories = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade =  CascadeType.ALL)
-    private List<PartyMember> joinedParties = new ArrayList<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private final List<PartyMember> joinedParties = new ArrayList<>();
 
-
+    // 1. 빌더가 사용할 생성자를 직접 정의합니다.
     @Builder
-    public User(String loginID, String username, String nickname, String password, String email,
-                String phoneNumber, UserStatus status, UserRole role, boolean marketingConsent) {
-        this.loginID = loginID;
+    public User(String loginId, String username, String nickname, String password, String email, String phoneNumber, boolean marketingConsent) {
+        this.loginId = loginId;
         this.username = username;
         this.nickname = nickname;
         this.password = password;
         this.email = email;
         this.phoneNumber = phoneNumber;
-        this.status = status != null ? status : UserStatus.PENDING;
-        this.role = role != null ? role : UserRole.USER;
         this.marketingConsent = marketingConsent;
     }
 }
-
-enum UserStatus { ACTIVE, DORMANT, BANNED, PENDING }

@@ -35,5 +35,3 @@ public class PartyMember {
     @CreatedDate
     private LocalDateTime joinedAt;
 }
-
-enum PartyMemberRole { LEADER, MEMBER }

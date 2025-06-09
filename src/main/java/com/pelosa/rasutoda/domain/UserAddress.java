@@ -3,6 +3,7 @@ package com.pelosa.rasutoda.domain;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -32,4 +33,15 @@ public class UserAddress {
 
     @Column(nullable = false)
     private boolean isDefault = false;
+
+    @Builder
+    public UserAddress(User user, String alias, String postalCode, String addressLine1, String addressLine2, boolean isDefault) {
+        this.user = user;
+        this.alias = alias;
+        this.postalCode = postalCode;
+        this.addressLine1 = addressLine1;
+        this.addressLine2 = addressLine2;
+        this.isDefault = isDefault;
+    }
+
 }
