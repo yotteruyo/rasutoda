@@ -48,7 +48,7 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false)
     private boolean marketingConsent = false;
 
-    private LocalDateTime lastLoginAt;
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

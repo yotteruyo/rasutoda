@@ -30,8 +30,7 @@ public class UserApiController {
             // 어떤 에러가 발생했는지 로그로 확인
             log.warn("회원가입 유효성 검사 오류: {}", bindingResult.getAllErrors());
             // 첫 번째 에러 메시지를 사용자에게 전달
-            redirectAttributes.addFlashAttribute("errorMessage", bindingResult.getAllErrors().get(0).getDefaultMessage());
-            return "redirect:/register"; // 다시 회원가입 페이지로
+            return "register"; // 다시 회원가입 페이지로
         }
 
         try {
