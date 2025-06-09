@@ -52,7 +52,3 @@ public class ChatMessage {
         this.fileUrl = fileUrl;
     }
 }
-
-enum MessageType {
-    TEXT, IMAGE, FILE, SYSTEM
-}
