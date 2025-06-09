@@ -198,7 +198,11 @@
         <p th:if="${selectedOtt != null}" th:text="${selectedOtt} + ' 파티에 참여하거나 새로운 파티를 시작해보세요.'">넷플릭스 파티에 참여하거나 새로운 파티를 시작해보세요.</p>
         <p th:unless="${selectedOtt != null}">모든 OTT 서비스의 파티를 확인하거나 직접 파티를 생성해보세요.</p>
     </div>
+    <a th:href="@{/party-create}" class="btn btn-primary btn-create">
+        <i class="fas fa-plus-circle me-2"></i> 파티 생성하기
+    </a>
 </section>
+
 
 <section class="party-list-container container">
     <div class="row">
@@ -225,7 +229,7 @@
                 <h3>현재 <span th:text="${selectedOtt != null ? selectedOtt : '선택된 OTT'}"></span> 파티가 없습니다.</h3>
                 <p>새로운 파티를 직접 생성해 보세요!</p>
 
-                <a th:href="@{/party-create(ott=${selectedOtt != null ? #strings.toLowerCase(selectedOtt) : null})}" class="btn btn-primary btn-create">
+                <a th:href="@{/party-create}" class="btn btn-primary btn-create">
                     <i class="fas fa-plus-circle me-2"></i> 파티 생성하기
                 </a>
 

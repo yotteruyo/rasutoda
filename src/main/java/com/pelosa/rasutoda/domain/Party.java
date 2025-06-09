@@ -38,26 +38,43 @@ public class Party extends BaseTimeEntity {
     private Integer maxMembers;
 
     @Column(nullable = false)
+    private Integer currentMembers = 0;
+
+    @Column(nullable = false)
     private Integer monthlyPrice;
+
+    @Column(nullable = false)
+    private LocalDate startDate;
 
     private LocalDate endDate;
 
-    @Lob
-    @Column(nullable = false)
-    private String content;
+    @Column(name = "ott_account_id", nullable = false, length = 150)
+    private String ottAccountId;
+
+    @Column(name = "ott_account_password", nullable = false, length = 255)
+    private String ottAccountPassword;
+
+//    @Lob
+//    @Column(nullable = false)
+//    private String content;
 
     @Column(nullable = false)
     private int viewCount = 0;
 
     @Builder
-    public Party(User creator, Ott ott, String title, String content, Integer maxMembers, Integer monthlyPrice, LocalDate endDate) {
+//    public Party(User creator, Ott ott, String title, String content, Integer maxMembers, Integer monthlyPrice,LocalDate startDate, LocalDate endDate, String ottAccountId, String ottAccountPassword, Integer currentMembers) {
+    public Party(User creator, Ott ott, String title, Integer maxMembers, Integer monthlyPrice,LocalDate startDate, LocalDate endDate, String ottAccountId, String ottAccountPassword, Integer currentMembers) {
         this.creator = creator;
         this.ott = ott;
         this.title = title;
-        this.content = content;
+//        this.content = content;
         this.maxMembers = maxMembers;
         this.monthlyPrice = monthlyPrice;
+        this.startDate = startDate;
         this.endDate = endDate;
         this.viewCount = 0;
+        this.ottAccountId = ottAccountId;
+        this.ottAccountPassword = ottAccountPassword;
+        this.currentMembers = currentMembers;
     }
 }

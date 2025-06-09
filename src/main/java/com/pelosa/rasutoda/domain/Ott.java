@@ -18,8 +18,10 @@ public class Ott {
     @Column(unique = true, nullable = false, length = 50)
     private String name;
 
+    @Column(nullable = false)
+    private String displayName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private Ott parent;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "parent_id")
+//    private Ott parent;
 }
