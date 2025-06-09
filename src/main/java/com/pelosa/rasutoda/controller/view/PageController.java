@@ -8,7 +8,7 @@ import com.pelosa.rasutoda.service.PartyServices;
 import org.springframework.ui.Model;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
-// import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -34,9 +34,35 @@ public class PageController {
     }
 
     @GetMapping("/register")
-    public String showRegisterPage() {
-        return "register";
-    }
+    public String showRegisterPage() {return "register";}
+
+    @GetMapping("/faq")
+    public String ShowFaqPage() { return "faq";}
+
+    @GetMapping("/contact")
+    public String showContactPage() { return "contact";}
+
+    @GetMapping("/privacy")
+    public String showPrivacyPage() { return "privacy";}
+
+    @GetMapping("/support")
+    public String showSupportPage() { return "support";}
+
+    @GetMapping("/terms")
+    public String showTremsPage(){return "terms";}
+
+    @GetMapping("/mypage")
+    public String showMypage() { return "mypage";}
+
+    @GetMapping("/mypage/profile-edit")
+    public String showProfileedit() {return "profile-edit";}
+
+    @GetMapping("/mypage/password-change")
+    public String showPasswordChange() {return "passwordchange";}
+
+    @GetMapping("/mypage/contact")
+    public String showContact() { return "contact";}
+
 
     @GetMapping("/party-create")
     public String showPartyCreateForm(@RequestParam(value = "ott", required = false) String ottName, Model model) {
@@ -80,7 +106,7 @@ public class PageController {
         System.out.println("월 가격: " + partyForm.getMonthlyPrice());
         System.out.println("--------------------------");
 
-        return "redirect:/mypage" + partyForm.getOttName();
+        return "redirect:/mypage"; // + partyForm.getOttName();
     }
 
     @GetMapping("/party-list")
