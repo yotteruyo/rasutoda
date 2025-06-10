@@ -12,6 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -20,6 +22,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserAddressRepository userAddressRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Transactional(readOnly = true)
+    public Optional<User> findUserByLoginId(String loginId) {
+        return userRepository.findByLoginId(loginId);
+    }
+
 
     @Transactional
     public Long register(UserRegisterRequestDto requestDto) {

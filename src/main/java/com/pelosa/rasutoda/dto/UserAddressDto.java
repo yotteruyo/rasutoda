@@ -16,6 +16,4 @@ public class UserAddressDto {
 
     @NotBlank(message = "상세주소를 입력해주세요.")
     private String addressLine2;
-
-    private String alias;
 }

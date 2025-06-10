@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title th:text="${myPartyDetail != null ? myPartyDetail.title + ' - 내 파티 정보' : '내 파티 정보'}">내 파티 정보</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCXd/XP" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* 네비게이션 바 (다른 페이지와 동일) */
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,.04);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #007bff !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            font-weight: 500;
+            color: #495057 !important;
+            margin-left: 1.5rem;
+        }
+        .nav-link:hover {
+            color: #007bff !important;
+        }
+
+        /* 페이지 헤더 */
+        .page-header {
+            background-color: #ffffff;
+            padding: 3rem 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,.04);
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #343a40;
+        }
+        .page-header p {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        /* 공통 섹션 카드 스타일 */
+        .section-card { /* mypage의 섹션카드와 동일 스타일 */
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .section-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #343a40;
+            border-bottom: 1px solid #f0f2f5;
+            padding-bottom: 0.75rem;
+        }
+
+        /* 파티 정보 상세 카드 */
+        .party-detail-card .ott-logo {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            border: 1px solid #e9ecef;
+            display: block;
+            margin: 0 auto 1.5rem auto;
+        }
+        .party-detail-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e9ecef;
+        }
+        .party-detail-card .info-row:last-child { border-bottom: none; }
+        .party-detail-card .info-label { font-weight: 600; color: #495057; }
+        .party-detail-card .info-value { color: #343a40; }
+        .party-detail-card .account-info .btn-toggle-visibility {
+            background: none;
+            border: none;
+            color: #007bff;
+            padding: 0;
+            margin-left: 0.5rem;
+            font-size: 0.9em;
+        }
+        .party-detail-card .account-info .masked {
+            filter: blur(4px); /* 내용을 가리는 시각 효과 */
+            user-select: none; /* 드래그 방지 */
+        }
+        .party-detail-card .next-payment-info {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            color: #28a745;
+        }
+        .party-detail-card .next-payment-info small {
+            font-weight: normal;
+            color: #6c757d;
+        }
+
+        /* 파티원 목록 */
+        .member-list-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e9ecef;
+            color: #555;
+        }
+        .member-list-item:last-child { border-bottom: none; }
+        .member-list-item i { margin-right: 0.75rem; color: #007bff; }
+        .member-list-item .member-name { flex-grow: 1; }
+        .member-list-item .member-role { font-weight: 600; color: #495057; font-size: 0.9em; }
+
+        /* 채팅 섹션 */
+        .chat-section {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .chat-section h5 {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        .chat-area {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+        }
+        .chat-input-group { display: flex; }
+        .chat-input {
+            flex-grow: 1;
+            border-radius: 0.5rem 0 0 0.5rem;
+            border-right: none;
+        }
+        .btn-chat-send {
+            border-radius: 0 0.5rem 0.5rem 0;
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+            padding: 0.75rem 1.25rem;
+        }
+        .btn-chat-send:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+
+        /* 결제 버튼 (토스 위젯에 직접 사용) */
+        #payment-button {
+            background-color: #3182F6; /* 토스 브랜드 컬러 */
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            margin-top: 1rem; /* 마진 추가 */
+        }
+        #payment-button:hover {
+            background-color: #1a6fe5;
+        }
+
+        /* 푸터 (다른 페이지와 동일) */
+        .footer {
+            background-color: #343a40;
+            color: #dee2e6;
+            padding: 3rem 0;
+            margin-top: auto;
+            font-size: 0.9rem;
+        }
+        .footer a {
+            color: #adb5bd;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
+        .footer a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand" href="/">스트리밍메이트</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+            <ul class="navbar-nav">
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" href="/mypage">마이페이지</a>
+                </li>
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <button type="submit" class="nav-link btn btn-link text-decoration-none">로그아웃</button>
+                    </form>
+                </li>
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" href="/login">로그인</a>
+                </li>
+                <li class="nav-item" sec:authorize="!isAuthenticated()">
+                    <a class="nav-link" href="/register">회원가입</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<section class="page-header">
+    <div class="container">
+        <h1 th:text="${myPartyDetail != null ? myPartyDetail.title + ' - 내 파티 정보' : '내 파티 정보'}">내 파티 정보</h1>
+        <p th:if="${myPartyDetail != null}">선택한 파티의 상세 정보를 확인하고 파티원들과 소통해보세요.</p>
+        <p th:unless="${myPartyDetail != null}">파티 정보를 불러오는 데 문제가 발생했거나, 접근할 수 없는 파티입니다.</p>
+    </div>
+</section>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+
+            <div class="section-card party-detail-card" th:if="${myPartyDetail != null}">
+                <h2 class="card-title text-center">파티 상세 정보</h2>
+                <img th:src="@{'/images/' + ${#strings.toLowerCase(myPartyDetail.ottName)} + '.png'}"
+                     th:alt="${myPartyDetail.ottName} + ' 로고'" class="ott-logo">
+
+                <div class="info-row">
+                    <span class="info-label">OTT 서비스</span>
+                    <span class="info-value" th:text="${myPartyDetail.ottName}">넷플릭스</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">파티장</span>
+                    <span class="info-value" th:text="${myPartyDetail.creatorNickname != null ? myPartyDetail.creatorNickname : '알 수 없음'}">파티장 닉네임</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">모집 인원</span>
+                    <span class="info-value" th:text="${myPartyDetail.currentMembers} + '/' + ${myPartyDetail.maxMembers} + '명'">3/4명</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">남은 기간</span>
+                    <span class="info-value" th:text="${myPartyDetail.remainingDays} + '일'">25일</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">월 가격 (1인당)</span>
+                    <span class="info-value" th:text="${#numbers.formatDecimal(myPartyDetail.monthlyPrice, 0, 'COMMA', 0, 'POINT')} + '원'">3,500원</span>
+                </div>
+
+                <div class="info-row account-info">
+                    <span class="info-label">계정 아이디</span>
+                    <span class="info-value">
+                            <span id="ottAccountId" th:text="${myPartyDetail.ottAccountId}" class="masked">ott_account_id</span>
+                            <button type="button" class="btn-toggle-visibility" onclick="toggleVisibility('ottAccountId')">보기</button>
+                        </span>
+                </div>
+                <div class="info-row account-info">
+                    <span class="info-label">계정 비밀번호</span>
+                    <span class="info-value">
+                            <span id="ottAccountPassword" th:text="${myPartyDetail.ottAccountPassword}" class="masked">ott_account_password</span>
+                            <button type="button" class="btn-toggle-visibility" onclick="toggleVisibility('ottAccountPassword')">보기</button>
+                        </span>
+                </div>
+
+                <div class="info-row">
+                    <span class="info-label">다음 결제일</span>
+                    <span class="info-value" th:text="${#temporals.format(myPartyDetail.nextPaymentDate, 'yyyy년 MM월 dd일')}">2025년 7월 10일</span>
+                </div>
+                <p class="next-payment-info">
+                    다음 결제는 <span th:text="${#temporals.format(myPartyDetail.nextPaymentDate, 'yyyy년 MM월 dd일')}">2025년 7월 10일</span> 입니다.
+                    <small th:if="${myPartyDetail.isLeader == true}"><br>파티장님, 결제일에 유의해 주세요.</small>
+                </p>
+
+                <hr class="my-4">
+
+                <h5 class="mb-3"><i class="fas fa-users me-2"></i> 파티원 정보</h5>
+                <div th:each="member : ${myPartyDetail.partyMembers}" class="member-list-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="member-name" th:text="${member.nickname}">멤버 닉네임</span>
+                    <span class="member-role" th:text="${member.role == 'LEADER' ? ' (파티장)' : ''}"> (파티장)</span>
+                    <span th:if="${member.isCurrentUser == true}" class="badge bg-primary ms-2">나</span>
+                </div>
+                <div th:unless="${not #lists.isEmpty(myPartyDetail.partyMembers)}" class="text-muted text-center py-3">
+                    아직 다른 파티원이 없습니다.
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-grid gap-2 mt-4">
+                    <th:block th:if="${myPartyDetail.isLeader == true}">
+                        <button type="button" class="btn btn-primary"><i class="fas fa-edit me-2"></i> 파티 정보 수정</button>
+                        <button type="button" class="btn btn-danger"><i class="fas fa-times-circle me-2"></i> 파티 해체</button>
+                    </th:block>
+                    <th:block th:unless="${myPartyDetail.isLeader == true}">
+                        <button type="button" class="btn btn-warning"><i class="fas fa-sign-out-alt me-2"></i> 파티 탈퇴</button>
+                        <button id="payment-button" type="button" class="btn btn-success mt-3"><i class="fas fa-credit-card me-2"></i> 결제하기</button>
+                    </th:block>
+                    <a href="/mypage" class="btn btn-light border"><i class="fas fa-arrow-left me-2"></i> 마이페이지로 돌아가기</a>
+                </div>
+            </div>
+
+            <div class="section-card chat-section" th:if="${myPartyDetail != null}">
+                <h3><i class="fas fa-comments me-2"></i> 파티 대화방</h3>
+                <div class="chat-area">
+                    <p class="text-muted text-center mt-4">실시간 채팅 기능은 현재 준비중입니다.</p>
+                </div>
+                <div class="input-group chat-input-group">
+                    <input type="text" class="form-control chat-input" placeholder="메시지를 입력하세요..." disabled>
+                    <button class="btn btn-chat-send" type="button" disabled>보내기</button>
+                </div>
+                <p class="text-muted small mt-2">채팅 기능은 개발 중입니다. 곧 찾아뵙겠습니다.</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <div class="container text-center">
+        <p>&copy; 2025 스트리밍메이트. 모든 권리 보유.</p>
+        <div>
+            <a href="/terms">이용약관</a>
+            <a href="/privacy">개인정보처리방침</a>
+            <a href="/contact">고객센터</a>
+        </div>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<script src="https://js.tosspayments.com/v1/payment-widget"></script>
+
+<script th:if="${myPartyDetail != null}" th:inline="javascript">
+    /*[CDATA[*/
+    // 토스페이먼츠 위젯 초기화
+    const clientKey = "test_g_js_vl50g6Vq3Qp1Nl38eA901j38p3gM0"; // 본인의 실제 클라이언트 키로 변경하세요!
+    const customerKey = "cus_" + /*[[${currentUser.id}]]*/ 'default_customer_key'; // 구매자 ID (현재 로그인한 사용자의 ID)
+
+    const price = /*[[${myPartyDetail.monthlyPrice}]]*/ 0; // 파티의 월 가격을 Thymeleaf에서 가져옴
+    const partyTitle = /*[[${myPartyDetail.title}]]*/ '파티 결제'; // 파티 제목을 Thymeleaf에서 가져옴
+    const orderId = "ORDER_" + crypto.randomUUID().replace(/-/g, ''); // 실제 주문 ID (고유해야 함)
+
+    // 결제 위젯 초기화
+    const paymentWidget = PaymentWidget(clientKey, customerKey);
+
+    // 결제 UI 렌더링
+    paymentWidget.renderPaymentMethods('#payment-widget', price);
+
+    // 결제 버튼 클릭 시 (파티원에게만 보이므로 isLeader 체크 불필요)
+    document.getElementById('payment-button').addEventListener('click', function() {
+        paymentWidget.requestPayment({
+            orderId: orderId,
+            orderName: partyTitle,
+            successUrl: window.location.origin + "/payment/success", // 성공 시 리다이렉트될 URL (백엔드에서 처리)
+            failUrl: window.location.origin + "/payment/fail",     // 실패 시 리다이렉트될 URL (백엔드에서 처리)
+        });
+    });
+
+    // 계정 정보 보기/숨기기 토글 함수 (API 호출 로직 제거)
+    function toggleVisibility(elementId) {
+        const element = document.getElementById(elementId);
+        const toggleButton = element.nextElementSibling; // '보기'/'숨기기' 버튼
+
+        if (element) {
+            if (element.classList.contains('masked')) {
+                // 숨겨진 상태 -> 보이게
+                element.classList.remove('masked');
+                toggleButton.textContent = '숨기기';
+            } else {
+                // 보이는 상태 -> 숨기게
+                element.classList.add('masked');
+                toggleButton.textContent = '보기';
+            }
+        }
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

@@ -20,8 +20,6 @@ public class UserAddress {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(length = 50)
-    private String alias;
 
     @Column(nullable = false, length = 10)
     private String postalCode;
@@ -35,9 +33,8 @@ public class UserAddress {
     private boolean isDefault = false;
 
     @Builder
-    public UserAddress(User user, String alias, String postalCode, String addressLine1, String addressLine2, boolean isDefault) {
+    public UserAddress(User user, String postalCode, String addressLine1, String addressLine2, boolean isDefault) {
         this.user = user;
-        this.alias = alias;
         this.postalCode = postalCode;
         this.addressLine1 = addressLine1;
         this.addressLine2 = addressLine2;

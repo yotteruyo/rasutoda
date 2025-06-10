@@ -1,12 +1,22 @@
 package com.pelosa.rasutoda.controller.view;
 
+import com.pelosa.rasutoda.domain.User;
+import com.pelosa.rasutoda.domain.Party;
+
 import com.pelosa.rasutoda.dto.PartyDto;
 import com.pelosa.rasutoda.dto.OttOption;
 import com.pelosa.rasutoda.dto.PartyCreateForm;
+import com.pelosa.rasutoda.dto.PartyMemberDto;
+
 import org.springframework.stereotype.Controller;
 import com.pelosa.rasutoda.service.PartyServices;
+import com.pelosa.rasutoda.service.UserService;
 import org.springframework.ui.Model;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,6 +32,7 @@ import java.util.Optional;
 public class PageController {
 
     private final PartyServices partyService;
+    private final UserService userService;
 
     @GetMapping("/")
     public String showMainPage() {
@@ -35,6 +46,29 @@ public class PageController {
 
     @GetMapping("/register")
     public String showRegisterPage() {return "register";}
+
+    @GetMapping("/party/join/{partyId}")
+    public String showMyJoinPartyPage(@PathVariable Long partyId ,Model model){
+        PartyDto partyDto = partyService.findPartyDetailById(partyId)
+                .orElseThrow(() -> new IllegalArgumentException("파티를 찾을 수 없습니다: " + partyId));
+
+        model.addAttribute("party", partyDto);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginId = authentication.getName();;
+        User currentUser = userService.findUserByLoginId(loginId)
+                .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
+        model.addAttribute("currentUser", currentUser);
+
+        // 3. (선택 사항) 해당 파티의 파티장 정보도 필요할 수 있음
+        // if (partyDto.getCreatorId() != null) { // PartyDto에 creatorId 필드 추가 후
+        //    User partyLeader = userService.findUserById(partyDto.getCreatorId())
+        //                           .orElse(null);
+        //    model.addAttribute("partyLeader", partyLeader);
+        // }
+
+        return "join";
+    }
 
     @GetMapping("/faq")
     public String ShowFaqPage() { return "faq";}
@@ -52,16 +86,46 @@ public class PageController {
     public String showTremsPage(){return "terms";}
 
     @GetMapping("/mypage")
-    public String showMypage() { return "mypage";}
+    public String showMypage(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginId = authentication.getName();
+
+        User currentUser = userService.findUserByLoginId(loginId)
+                .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
+        model.addAttribute("user", currentUser);
+
+        List<PartyDto> createdParties = partyService.findCreatedPartiesByCreator(currentUser);
+        model.addAttribute("createdParties", createdParties);
+
+        List<PartyDto> joinedParties = partyService.findJoinedPartiesByUser(currentUser);
+        model.addAttribute("joinedParties", joinedParties);
+
+        return "mypage";}
 
     @GetMapping("/mypage/profile-edit")
     public String showProfileedit() {return "profile-edit";}
 
     @GetMapping("/mypage/password-change")
-    public String showPasswordChange() {return "passwordchange";}
+    public String showPasswordChange() {return "password-change";}
 
     @GetMapping("/mypage/contact")
     public String showContact() { return "contact";}
+
+    @GetMapping("/mypage/my-party/{partyId}")
+    public String showMyPartyDetail(@PathVariable Long partyId, Model model){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginId = authentication.getName();
+        User currentUser = userService.findUserByLoginId(loginId)
+                .orElseThrow(()  -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다." + loginId));
+        model.addAttribute("currentUser", currentUser);
+
+        PartyDto myPartyDetail = partyService.findMyPartyDetailForUser(partyId, currentUser)
+                .orElseThrow(() -> new IllegalArgumentException("파티를 찾을 수 없거나 접근 권한이 없습니다: " + partyId));
+
+        model.addAttribute("myPartyDetail", myPartyDetail);
+        model.addAttribute("user", currentUser);
+        return "myparty";
+    }
 
 
     @GetMapping("/party-create")
@@ -72,9 +136,8 @@ public class PageController {
                 new OttOption("disneyplus", "디즈니플러스"),
                 new OttOption("wavve", "웨이브"),
                 new OttOption("tving", "티빙"),
-                new OttOption("coupangplay", "쿠팡 플레이"),
-                new OttOption("watcha", "왓챠")
-                );
+                new OttOption("coupangplay", "쿠팡 플레이")
+        );
 
         model.addAttribute("ottList", ottList);
 
@@ -86,7 +149,6 @@ public class PageController {
                     if (name.equalsIgnoreCase("wavve")) return "웨이브";
                     if (name.equalsIgnoreCase("tving")) return "티빙";
                     if (name.equalsIgnoreCase("coupangplay")) return "쿠팡 플레이";
-                    if (name.equalsIgnoreCase("watcha")) return "왓챠";
                     return name.substring(0, 1).toUpperCase() + name.substring(1);
                 })
                 .orElse(null));
@@ -122,7 +184,6 @@ public class PageController {
                         if (name.equalsIgnoreCase("wavve")) return "웨이브";
                         if (name.equalsIgnoreCase("tving")) return "티빙";
                         if (name.equalsIgnoreCase("coupangplay")) return "쿠팡 플레이";
-                        if (name.equalsIgnoreCase("watcha")) return "왓챠";
                         return name.substring(0, 1).toUpperCase() + name.substring(1);
                     })
                     .orElse(null));

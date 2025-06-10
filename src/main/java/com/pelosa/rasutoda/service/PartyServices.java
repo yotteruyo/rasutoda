@@ -3,15 +3,20 @@ package com.pelosa.rasutoda.service;
 import com.pelosa.rasutoda.domain.Party;
 import com.pelosa.rasutoda.domain.Ott;
 import com.pelosa.rasutoda.domain.PartyMember;
+import com.pelosa.rasutoda.domain.PartyMemberRole;
 import com.pelosa.rasutoda.domain.User;
-import com.pelosa.rasutoda.repository.OttRepository;
+
 
 import com.pelosa.rasutoda.dto.PartyDto;
 import com.pelosa.rasutoda.dto.PartyCreateForm;
+import com.pelosa.rasutoda.dto.PartyMemberDto;
 
 import com.pelosa.rasutoda.repository.OttRepository;
+import com.pelosa.rasutoda.repository.PartyMemberRepository;
 import com.pelosa.rasutoda.repository.UserRepository;
 import com.pelosa.rasutoda.repository.PartyRepository;
+
+import com.pelosa.rasutoda.util.AES256Util;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication; // 현재 로그인 유저 정보 가져오기 위함
@@ -19,11 +24,13 @@ import org.springframework.security.core.context.SecurityContextHolder; // 현�
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +42,8 @@ public class PartyServices {
     private final UserRepository userRepository;
     private final PartyRepository partyRepository;
     private final OttRepository ottRepository;
+    private final PartyMemberRepository partyMemberRepository;
+    private final AES256Util aes256Util;
 
     public List<PartyDto> findAllParties() {
         return partyRepository.findAll().stream()
@@ -48,6 +57,61 @@ public class PartyServices {
                 .collect(Collectors.toList());
     }
 
+    public List<PartyDto> findCreatedPartiesByCreator(User creator) {
+        return partyRepository.findByCreator(creator).stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<PartyDto> findJoinedPartiesByUser(User user){
+        return partyMemberRepository.findByMember(user).stream()
+                .map(PartyMember::getParty)
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<PartyDto> findPartyDetailById(Long partyId){
+        return partyRepository.findById(partyId)
+                .map(this::convertToDto);
+    }
+
+    public Optional<PartyDto> findMyPartyDetailForUser(Long partyId, User currentUser){
+        return partyRepository.findById(partyId)
+                .map(party -> {
+                    boolean isMemberOfThisParty = party.getMembers().stream()
+                            .anyMatch(pm -> pm.getMember().getId().equals(currentUser.getId()));
+                    if (!isMemberOfThisParty) {
+                        return null;
+                    }
+
+                    PartyDto dto = convertToDto(party);
+
+                    try {
+                        dto.setOttAccountId(party.getOttAccountId());
+                        dto.setOttAccountPassword(aes256Util.decrypt(party.getOttAccountPassword())); // 복호화된 평문 비밀번호 설정
+                    } catch (Exception e) {
+                        System.err.println("OTT 계정 비밀번호 복호화 실패: " + e.getMessage());
+                        dto.setOttAccountPassword("복호화 오류"); // 또는 null
+                    }
+                    LocalDate nextPaymentDate = party.getEndDate() != null ? party.getEndDate().plusMonths(1) : LocalDate.now().plusMonths(1);
+                    dto.setNextPaymentDate(nextPaymentDate);
+
+                    dto.setIsLeader(party.getCreator().getId().equals(currentUser.getId()));
+
+                    List<PartyMemberDto> memberDtos = party.getMembers().stream()
+                            .map(pm -> new PartyMemberDto(
+                                    pm.getId(),
+                                    pm.getMember().getNickname(),
+                                    pm.getRole().name(),
+                                    pm.getMember().getId().equals(currentUser.getId())
+                            ))
+                            .collect(Collectors.toList());
+                    dto.setPartyMembers(memberDtos);
+
+                    return dto;
+                });
+    }
+
     @Transactional
     public void createParty(PartyCreateForm form){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -57,8 +121,12 @@ public class PartyServices {
         Ott ott = ottRepository.findByNameIgnoreCase(form.getOttName()) // <-- OttRepository 사용
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 OTT 서비스입니다: " + form.getOttName()));
 
-
-        String encryptedOttAccountPassword = passwordEncoder.encode(form.getOttAccountPassword());
+        String encryptedOttAccountPassword;
+        try {
+            encryptedOttAccountPassword = aes256Util.encrypt(form.getOttAccountPassword());
+        } catch (Exception e) {
+            throw new IllegalStateException("OTT 계정 비밀번호 암호화에 실패했습니다.", e);
+        }
 
 
         Party party = Party.builder()
@@ -73,6 +141,18 @@ public class PartyServices {
                 .ottAccountPassword(encryptedOttAccountPassword)
                 .creator(creator)
                 .build();
+        Party savedParty = partyRepository.save(party);
+
+        PartyMember initialMember = PartyMember.builder()
+                .party(savedParty)
+                .member(creator)
+                .joinDate(LocalDate.now())
+                .role(PartyMemberRole.LEADER)
+                .build();
+
+        partyMemberRepository.save(initialMember);
+            savedParty.getMembers().add(initialMember);
+
 
         partyRepository.save(party);
     }
@@ -89,6 +169,8 @@ public class PartyServices {
                 .currentMembers(party.getMembers().size())
                 .maxMembers(party.getMaxMembers())
                 .remainingDays(remainingDays)
+                .creatorId(party.getCreator() != null ? party.getCreator().getId() : null)
+                .creatorNickname(party.getCreator() != null ? party.getCreator().getNickname() : "알 수 없음")
                 .monthlyPrice(party.getMonthlyPrice())
                 .build();
     }

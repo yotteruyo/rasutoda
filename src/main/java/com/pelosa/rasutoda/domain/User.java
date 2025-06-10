@@ -54,13 +54,12 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<UserAddress> addresses = new ArrayList<>();
 
+    @OneToMany(mappedBy = "member",cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PartyMember> joinedPartyMembers = new ArrayList<>();
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<LoginHistory> loginHistories = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<PartyMember> joinedParties = new ArrayList<>();
-
-    // 1. 빌더가 사용할 생성자를 직접 정의합니다.
     @Builder
     public User(String loginId, String username, String nickname, String password, String email, String phoneNumber, boolean marketingConsent) {
         this.loginId = loginId;

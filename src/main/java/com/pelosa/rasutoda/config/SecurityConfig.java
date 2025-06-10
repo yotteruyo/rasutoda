@@ -21,7 +21,28 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/register","/api/parties/create" ,"/api/users/register", "/css/**", "/images/**", "/js/**").permitAll()
+                        .requestMatchers(
+                                "/",
+                                "/login",
+                                "/register",
+                                "/api/parties/create",
+                                "/api/users/register",
+                                "/css/**",
+                                "/images/**",
+                                "/js/**",
+                                "/terms",
+                                "/privacy",
+                                "/support",
+                                "/faq",
+                                "/party-list",
+                                "/party/join/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/mypage",
+                                "/mypage/**",
+                                "/party-create"
+                        ).authenticated()
+
                         .anyRequest().authenticated()
                 )
 

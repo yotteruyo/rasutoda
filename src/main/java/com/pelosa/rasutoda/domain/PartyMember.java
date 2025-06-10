@@ -3,11 +3,12 @@ package com.pelosa.rasutoda.domain;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "party_members")
@@ -26,12 +27,22 @@ public class PartyMember {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private User user;
+    private User member;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PartyMemberRole role; // 파티장, 파티원 구분
 
-    @CreatedDate
-    private LocalDateTime joinedAt;
+    @Column(nullable = false)
+    private LocalDate joinDate;
+
+    @Builder
+    public PartyMember(Party party, User member,LocalDate joinDate, PartyMemberRole role){
+        this.party = party;
+        this.member = member;
+        this.role = role;
+        this.joinDate = joinDate;
+    }
+
+
 }

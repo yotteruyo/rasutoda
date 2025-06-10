@@ -4,4 +4,3 @@ INSERT IGNORE INTO ott (name, display_name) VALUES ('disneyplus', '디즈니+');
 INSERT IGNORE INTO ott (name, display_name) VALUES ('wavve', '웨이브');
 INSERT IGNORE INTO ott (name, display_name) VALUES ('tving', '티빙');
 INSERT IGNORE INTO ott (name, display_name) VALUES ('coupangplay', '쿠팡 플레이');
-INSERT IGNORE INTO ott (name, display_name) VALUES ('watcha', '왓챠');
