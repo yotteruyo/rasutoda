@@ -1,16 +1,15 @@
 package com.pelosa.rasutoda.controller.view;
 
 import com.pelosa.rasutoda.domain.User;
-import com.pelosa.rasutoda.domain.Party;
 
 import com.pelosa.rasutoda.dto.PartyDto;
 import com.pelosa.rasutoda.dto.OttOption;
 import com.pelosa.rasutoda.dto.PartyCreateForm;
-import com.pelosa.rasutoda.dto.PartyMemberDto;
 
 import org.springframework.stereotype.Controller;
 import com.pelosa.rasutoda.service.PartyServices;
 import com.pelosa.rasutoda.service.UserService;
+import com.pelosa.rasutoda.service.PaymentsService;
 import org.springframework.ui.Model;
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +22,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +35,7 @@ public class PageController {
 
     private final PartyServices partyService;
     private final UserService userService;
+    private final PaymentsService paymentsService;
 
     @GetMapping("/")
     public String showMainPage() {
@@ -59,13 +62,6 @@ public class PageController {
         User currentUser = userService.findUserByLoginId(loginId)
                 .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
         model.addAttribute("currentUser", currentUser);
-
-        // 3. (선택 사항) 해당 파티의 파티장 정보도 필요할 수 있음
-        // if (partyDto.getCreatorId() != null) { // PartyDto에 creatorId 필드 추가 후
-        //    User partyLeader = userService.findUserById(partyDto.getCreatorId())
-        //                           .orElse(null);
-        //    model.addAttribute("partyLeader", partyLeader);
-        // }
 
         return "join";
     }
@@ -108,8 +104,6 @@ public class PageController {
     @GetMapping("/mypage/password-change")
     public String showPasswordChange() {return "password-change";}
 
-    @GetMapping("/mypage/contact")
-    public String showContact() { return "contact";}
 
     @GetMapping("/mypage/my-party/{partyId}")
     public String showMyPartyDetail(@PathVariable Long partyId, Model model){
@@ -168,7 +162,50 @@ public class PageController {
         System.out.println("월 가격: " + partyForm.getMonthlyPrice());
         System.out.println("--------------------------");
 
-        return "redirect:/mypage"; // + partyForm.getOttName();
+        return "redirect:/mypage";
+    }
+
+    @GetMapping("/payment/success")
+    public String showPaymentSuccessPage(
+            @RequestParam String paymentType,
+            @RequestParam String orderId,
+            @RequestParam String paymentKey,
+            @RequestParam Long amount,
+            Model model) {
+
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String loginId = authentication.getName();
+            User currentUser = userService.findUserByLoginId(loginId)
+                    .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
+
+            paymentsService.processPaymentSuccess(paymentType, orderId, paymentKey, amount, currentUser);
+
+            model.addAttribute("message", "결제가 성공적으로 완료되어 파티에 참여되었습니다!");
+            model.addAttribute("orderId", orderId); // HTML에서 partyId 추출용
+
+            return "payment-success"; // payment-success.html 템플릿 렌더링
+        } catch (IllegalArgumentException e) { // 파티 ID 추출 실패, 유효하지 않은 파티, 이미 참여 등
+            System.err.println("결제 성공 페이지 처리 중 비즈니스 로직 오류: " + e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
+            // 에러 발생 시 결제 실패 페이지로 이동
+            return "redirect:/payment/fail?code=BUSINESS_ERROR&message=" + URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+        } catch (IllegalStateException e) { // 로그인 유저 없거나 등 (Authentication/Authorization 문제)
+            System.err.println("결제 성공 페이지 처리 중 인증/상태 오류: " + e.getMessage());
+            model.addAttribute("errorMessage", e.getMessage());
+            return "redirect:/login"; // 로그인 페이지로 리다이렉트
+        } catch (Exception e) {
+            System.err.println("결제 성공 페이지 처리 중 알 수 없는 예외 발생: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("errorMessage", "결제 처리 중 시스템 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            return "redirect:/payment/fail";
+        }
+    }
+
+    @GetMapping("/payment/fail")
+    public String showPaymentFailPage(@RequestParam String code, @RequestParam String message, Model model) {
+        model.addAttribute("errorMessage", "결제가 실패했습니다: " + message + " (코드: " + code + ")");
+        return "payment-fail";
     }
 
     @GetMapping("/party-list")

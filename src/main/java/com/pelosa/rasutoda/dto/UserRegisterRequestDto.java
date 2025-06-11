@@ -31,9 +31,7 @@ public class UserRegisterRequestDto {
     @Pattern(regexp = "^\\d{2,3}-\\d{3,4}-\\d{4}$", message = "010-1234-5678 형식으로 입력해주세요.")
     private String phoneNumber;
 
-    @Valid
-    @NotNull(message = "주소를 입력해주세요.")
-    private UserAddressDto address;
+
 
     private boolean marketingConsent = false;
 }

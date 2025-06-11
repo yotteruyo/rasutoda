@@ -22,10 +22,21 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/api/parties/create",
+                                "/api/parties/{partyId}/messages",
+                                "/api/parties/{partyId}/messages/file"
+                        ).authenticated()
+
+                        .requestMatchers(
+                                "/mypage",
+                                "/mypage/**",
+                                "/party-create"
+                        ).authenticated()
+
+                        .requestMatchers(
                                 "/",
                                 "/login",
                                 "/register",
-                                "/api/parties/create",
                                 "/api/users/register",
                                 "/css/**",
                                 "/images/**",
@@ -35,20 +46,18 @@ public class SecurityConfig {
                                 "/support",
                                 "/faq",
                                 "/party-list",
-                                "/party/join/**"
+                                "/party/join/**",
+                                "/payment/success",
+                                "/payment/fail",
+                                "/confirm"
                         ).permitAll()
-                        .requestMatchers(
-                                "/mypage",
-                                "/mypage/**",
-                                "/party-create"
-                        ).authenticated()
 
                         .anyRequest().authenticated()
                 )
 
                 .formLogin(form->form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/mypage", true)
                         .permitAll()
                 )
                 .logout(logout->logout

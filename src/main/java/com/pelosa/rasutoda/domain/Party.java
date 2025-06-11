@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 @Entity
 @Table(name = "party")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Party extends BaseTimeEntity {
 
@@ -54,20 +56,15 @@ public class Party extends BaseTimeEntity {
     @Column(name = "ott_account_password", nullable = false, length = 255)
     private String ottAccountPassword;
 
-//    @Lob
-//    @Column(nullable = false)
-//    private String content;
 
     @Column(nullable = false)
     private int viewCount = 0;
 
     @Builder
-//    public Party(User creator, Ott ott, String title, String content, Integer maxMembers, Integer monthlyPrice,LocalDate startDate, LocalDate endDate, String ottAccountId, String ottAccountPassword, Integer currentMembers) {
     public Party(User creator, Ott ott, String title, Integer maxMembers, Integer monthlyPrice,LocalDate startDate, LocalDate endDate, String ottAccountId, String ottAccountPassword, Integer currentMembers) {
         this.creator = creator;
         this.ott = ott;
         this.title = title;
-//        this.content = content;
         this.maxMembers = maxMembers;
         this.monthlyPrice = monthlyPrice;
         this.startDate = startDate;

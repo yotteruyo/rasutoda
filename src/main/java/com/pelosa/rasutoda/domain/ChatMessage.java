@@ -37,18 +37,15 @@ public class ChatMessage {
     @Column(nullable = false)
     private MessageType messageType;
 
-    private String fileUrl;
-
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @Builder
-    public ChatMessage(Party party, User sender, String message, MessageType messageType, String fileUrl) {
+    public ChatMessage(Party party, User sender, String message, MessageType messageType) {
         this.party = party;
         this.sender = sender;
         this.message = message;
         this.messageType = messageType;
-        this.fileUrl = fileUrl;
     }
 }

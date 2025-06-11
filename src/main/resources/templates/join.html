@@ -266,18 +266,6 @@
         <button id="payment-button" style="margin-top: 1rem;">결제하기</button>
       </div>
 
-      <div class="chat-section" th:if="${party != null}">
-        <h5><i class="fas fa-comments me-2"></i> 파티장과 대화하기</h5>
-        <div class="chat-area">
-          <p class="text-muted text-center mt-4">채팅 기능은 현재 준비중입니다.</p>
-        </div>
-        <div class="input-group chat-input-group">
-          <input type="text" class="form-control chat-input" placeholder="메시지를 입력하세요..." disabled>
-          <button class="btn btn-chat-send" type="button" disabled>보내기</button>
-        </div>
-        <p class="text-muted small mt-2">채팅 기능은 개발 중입니다. 곧 찾아뵙겠습니다.</p>
-      </div>
-
     </div>
   </div>
 </div>
@@ -299,9 +287,73 @@
 
 <script th:if="${party != null}" th:inline="javascript">
   /*[CDATA[*/
+  const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm"; // 본인의 실제 클라이언트 키로 변경하세요!
+  const customerKey = "cus_" + /*[[${currentUser.id}]]*/ 'default_customer_key'; // 구매자 ID (현재 로그인한 사용자의 ID)
+
+  const price = /*[[${party.monthlyPrice}]]*/ 0;
+  const partyTitle = /*[[${party.title}]]*/ '파티 결제';
+  // orderId에 partyId를 포함시켜서 결제 성공 후 백엔드에서 파티ID를 추출할 수 있도록 합니다.
+  const partyIdForOrder = /*[[${party.id}]]*/ '0'; // 파티 ID 가져오기
+  const orderId = "ORDER_" + partyIdForOrder + "_" + crypto.randomUUID().replace(/-/g, ''); // 파티ID 포함
+
+  const paymentWidget = PaymentWidget(clientKey, customerKey);
+  paymentWidget.renderPaymentMethods('#payment-widget', price);
+
+  document.getElementById('payment-button').addEventListener('click', function() {
+      paymentWidget.requestPayment({
+          orderId: orderId,
+          orderName: partyTitle,
+          successUrl: window.location.origin + "/payment/success", // PaymentController의 API 엔드포인트
+          failUrl: window.location.origin + "/payment/fail",     // PaymentController의 API 엔드포인트
+      })
+      .then(function (result) {
+          // 이 .then() 블록은 결제 위젯 SDK가 자동으로 successUrl로 리다이렉트하므로,
+          // 실제 HTTP 요청 성공 시에는 실행되지 않을 수 있습니다.
+          // 하지만 결제 위젯 자체의 성공 콜백을 잡는 용도로는 사용될 수 있습니다.
+          console.log("결제 요청 완료 (위젯 내부):", result);
+      })
+      .catch(function (error) {
+          // 결제 위젯 자체에서 발생하는 에러 (예: 브라우저 환경 미지원)
+          console.error("결제 위젯 오류:", error);
+          alert("결제 위젯 오류: " + error.message);
+      });
+  });
+
+  // ====================================================================
+  // NOTE: 이 코드는 /payment/success.html 또는 /payment/fail.html (뷰 템플릿)에 있어야 합니다.
+  // join.html 에서는 결제 요청만 보내고, 토스 위젯이 성공/실패 URL로 브라우저를 리다이렉트합니다.
+  // 따라서 join.html 에는 이 아래 코드는 필요 없습니다.
+  //
+  // 하지만, 만약 /payment/success 와 /payment/fail 페이지가 (HTML 템플릿)
+  // API 컨트롤러의 리다이렉트 URL에서 JSON 응답을 받아와
+  // 최종적인 페이지 전환을 담당한다면, 해당 뷰 템플릿에 다음 코드를 추가해야 합니다.
+  // (지금은 PageController에 /payment/fail 뷰 매핑만 있고, /payment/success 뷰 매핑은 없습니다.)
+  //
+  // 예시: /payment/success.html 뷰 템플릿에 (만약 필요하다면)
+  // <script th:inline="javascript">
+  //     /*[CDATA[*/
+  //     const apiResponse = /*[[${responseFromController}]]*/ null; // 컨트롤러에서 JSON 응답을 모델에 담아 넘겨준다고 가정
+  //     if (apiResponse && apiResponse.redirectUrl) {
+  //         window.location.href = apiResponse.redirectUrl; // API에서 받은 URL로 리다이렉트
+  //     } else if (apiResponse && apiResponse.message) {
+  //         alert(apiResponse.message);
+  //     }
+  //     /*]]>*/
+  // </script>
+//
+// 지금은 `PaymentController.handlePaymentSuccessCallback`이 `ResponseEntity`를 반환하므로,
+// 토스 위젯은 이 응답을 받아 처리하는 것이 아니라, `successUrl`로 브라우저를 **GET 리다이렉트**합니다.
+// 따라서 `/payment/success` URL은 **페이지를 직접 반환하는 `@Controller`의 `@GetMapping` 매핑**이 되어야 합니다.
+// 이것은 `PageController`에서 이전에 삭제했던 `handlePaymentSuccess`를 다시 만들어야 한다는 의미입니다.
+
+/*]]>*/
+</script>
+
+<script th:if="${party != null}" th:inline="javascript">
+  /*[CDATA[*/
   // 토스페이먼츠 위젯 초기화
-  const clientKey = "test_g_js_vl50g6Vq3Qp1Nl38eA901j38p3gM0"; // 본인의 실제 클라이언트 키로 변경하세요!
-  const customerKey = "YOUR_CUSTOMER_KEY"; // 구매자 ID (예: 현재 로그인한 사용자의 ID)
+  const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm"; // 본인의 실제 클라이언트 키로 변경하세요!
+  const customerKey = "cus_" + /*[[${currentUser.id}]]*/ 'default_customer_key';  // 구매자 ID (예: 현재 로그인한 사용자의 ID)
 
   const price = /*[[${party.monthlyPrice}]]*/ 0; // 파티의 월 가격을 Thymeleaf에서 가져옴
   const partyTitle = /*[[${party.title}]]*/ '파티 결제'; // 파티 제목을 Thymeleaf에서 가져옴
@@ -318,8 +370,68 @@
       paymentWidget.requestPayment({
           orderId: orderId,
           orderName: partyTitle,
-          successUrl: window.location.origin + "/payment/success", // 성공 시 리다이렉트될 URL (백엔드에서 처리)
-          failUrl: window.location.origin + "/payment/fail",     // 실패 시 리다이렉트될 URL (백엔드에서 처리)
+             successUrl: window.location.origin + "/payment/success?orderId=" + orderId + "&paymentKey=" + paymentKey + "&amount=" + price + "&paymentType=NORMAL", // 결제 성공 시 페이지로 리다이렉트되면서 파라미터 전달
+            failUrl: window.location.origin + "/payment/fail", // 결제 실패 시 페이지로 리다이렉트
+      });
+  });
+  /*]]>*/
+</script>
+<script th:if="${party != null}" th:inline="javascript">
+  /*[CDATA[*/
+  const clientKey = "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm";
+  const customerKey = "cus_" + /*[[${currentUser.id}]]*/ 'default_customer_key';
+
+  const price = /*[[${party.monthlyPrice}]]*/ 0;
+  const partyTitle = /*[[${party.title}]]*/ '파티 결제';
+  const partyIdForOrder = /*[[${party.id}]]*/ '0';
+  const orderId = "ORDER_" + partyIdForOrder + "_" + crypto.randomUUID().replace(/-/g, '');
+
+  const paymentWidget = PaymentWidget(clientKey, customerKey);
+  paymentWidget.renderPaymentMethods('#payment-widget', price);
+
+  document.getElementById('payment-button').addEventListener('click', function() {
+      paymentWidget.requestPayment({
+          orderId: orderId,
+          orderName: partyTitle,
+          // successUrl과 failUrl을 백엔드 API 엔드포인트로 설정
+          // 이 API는 JSON을 반환하고, 클라이언트 JS가 그 JSON을 처리해야 합니다.
+          successUrl: window.location.origin + "/api/payment/confirm", // POST /api/payment/confirm
+          failUrl: window.location.origin + "/payment/fail",     // GET /payment/fail (뷰 템플릿)
+      })
+      .then(function (result) {
+          // 이 .then() 블록은 토스 위젯 SDK가 결제 요청을 보내고 난 후,
+          // 백엔드의 `successUrl`이 HTML 페이지로 리다이렉트하는 경우 작동합니다.
+          // 하지만 현재는 successUrl이 API 엔드포인트이므로, 아래 catch에서 API 응답을 직접 처리해야 합니다.
+          // 이 블록 자체는 거의 실행되지 않습니다.
+          console.log("결제 요청 완료 (위젯 내부):", result);
+      })
+      .catch(function (error) {
+          // 실제 API 응답을 받아 처리하는 부분
+          // error 객체에 HTTP 응답 상태나 메시지가 담길 수 있습니다.
+          console.error("결제 위젯 또는 API 통신 오류:", error);
+
+          // 토스페이먼츠 위젯의 `requestPayment`는 `successUrl` 또는 `failUrl`로 브라우저를 **리다이렉트**합니다.
+          // `successUrl`을 `@RestController`로 설정하면,
+          // 브라우저는 `/payment/success`로 리다이렉트되고, 그 페이지에서 JSON을 받아 처리해야 합니다.
+          // 따라서 `join.html`에서는 `.then()` / `.catch()` 블록에서 `fetch` API를 직접 호출하는 방식이 더 적합합니다.
+
+          // --- 다시 한 번 연동 방식 정리 ---
+          // 1. join.html : `paymentWidget.requestPayment` 호출
+          //    -> **이때 `successUrl`은 `PageController`의 `GET /payment/success`로 설정.** (HTML 뷰 반환)
+          // 2. `PageController.showPaymentSuccessPage` (GET /payment/success)
+          //    -> 토스 위젯이 보낸 파라미터를 받음.
+          //    -> **여기서 백엔드 API (`POST /api/payment/confirm`)를 `fetch`나 `RestTemplate`으로 호출.**
+          //    -> API 응답을 받아 성공/실패 메시지 처리 후 `payment-success.html` 뷰 렌더링.
+          // 3. `PaymentController.confirmPaymentApi` (POST /api/payment/confirm)
+          //    -> 순수 API 역할. 결제 승인 및 DB 저장 후 JSON 응답 반환.
+
+          // 현재 오류: "Order ID에서 파티 ID를 추출할 수 없습니다"
+          // -> 이는 `PaymentsServiceImpl.processPaymentSuccess`가 호출된 시점에서 이미 발생하고 있습니다.
+          // 즉, `paymentWidget.requestPayment`의 `successUrl`로 `/payment/success`를 GET 요청했고,
+          // `PageController.showPaymentSuccessPage`가 호출되었으며, 그 안에서 `paymentsService.processPaymentSuccess`가 호출된 것입니다.
+
+          // 따라서 `join.html`의 스크립트는 이대로 두고, `PageController.showPaymentSuccessPage`의 로직을 다시 확인해야 합니다.
+          // (이전 답변에서 이 부분을 PaymentsService로 위임했습니다.)
       });
   });
   /*]]>*/

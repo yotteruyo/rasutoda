@@ -1,12 +1,12 @@
 package com.pelosa.rasutoda.service;
 
 import com.pelosa.rasutoda.domain.User;
-import com.pelosa.rasutoda.domain.UserAddress;
+//import com.pelosa.rasutoda.domain.UserAddress;
 import com.pelosa.rasutoda.domain.UserRole;
-import com.pelosa.rasutoda.dto.UserAddressDto;
+//import com.pelosa.rasutoda.dto.UserAddressDto;
 import com.pelosa.rasutoda.dto.UserRegisterRequestDto;
 import com.pelosa.rasutoda.repository.UserRepository;
-import com.pelosa.rasutoda.repository.UserAddressRepository;
+//import com.pelosa.rasutoda.repository.UserAddressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final UserAddressRepository userAddressRepository;
+//    private final UserAddressRepository userAddressRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
@@ -49,17 +49,17 @@ public class UserService {
             .build();
         User savedUser = userRepository.save(user);
 
-        UserAddressDto addressDto = requestDto.getAddress();
-        if (addressDto != null){
-            UserAddress address = UserAddress.builder()
-                    .user(savedUser)
-                    .postalCode(addressDto.getPostalCode())
-                    .addressLine1(addressDto.getAddressLine1())
-                    .addressLine2(addressDto.getAddressLine2())
-                    .isDefault(true)
-                    .build();
-            userAddressRepository.save(address);
-        }
+//        UserAddressDto addressDto = requestDto.getAddress();
+//        if (addressDto != null){
+//            UserAddress address = UserAddress.builder()
+//                    .user(savedUser)
+//                    .postalCode(addressDto.getPostalCode())
+//                    .addressLine1(addressDto.getAddressLine1())
+//                    .addressLine2(addressDto.getAddressLine2())
+//                    .isDefault(true)
+//                    .build();
+//            userAddressRepository.save(address);
+//        }
 
         return savedUser.getId();
     }

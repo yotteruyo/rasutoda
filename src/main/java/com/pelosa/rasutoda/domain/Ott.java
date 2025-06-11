@@ -21,7 +21,5 @@ public class Ott {
     @Column(nullable = false)
     private String displayName;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "parent_id")
-//    private Ott parent;
+
 }

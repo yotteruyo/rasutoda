@@ -31,7 +31,7 @@ public class PartyMember {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PartyMemberRole role; // 파티장, 파티원 구분
+    private PartyMemberRole role;
 
     @Column(nullable = false)
     private LocalDate joinDate;

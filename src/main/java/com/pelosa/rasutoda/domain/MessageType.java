@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MessageType {
     TEXT,
-    IMAGE,
     FILE,
     SYSTEM
 }

@@ -51,14 +51,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<UserAddress> addresses = new ArrayList<>();
 
     @OneToMany(mappedBy = "member",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PartyMember> joinedPartyMembers = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<LoginHistory> loginHistories = new ArrayList<>();
 
     @Builder
     public User(String loginId, String username, String nickname, String password, String email, String phoneNumber, boolean marketingConsent) {

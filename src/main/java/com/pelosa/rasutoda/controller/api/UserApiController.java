@@ -23,19 +23,16 @@ public class UserApiController {
 
     @PostMapping("/register")
     public String registerUser(@Valid @ModelAttribute UserRegisterRequestDto requestDto,
-                               BindingResult bindingResult, // 2. BindingResult 파라미터 추가
+                               BindingResult bindingResult,
                                Model model,
                                RedirectAttributes redirectAttributes) {
 
-        // 3. 유효성 검사 실패 시 처리 로직 추가
         if (bindingResult.hasErrors()) {
-            // 어떤 에러가 발생했는지 로그로 확인
             log.warn("회원가입 유효성 검사 오류: {}", bindingResult.getAllErrors());
 
             model.addAttribute("errorMessage", "회원가입 정보를 확인해주세요.");
-            // 첫 번째 에러 메시지를 사용자에게 전달
             model.addAttribute("userRegisterRquestDto", requestDto);
-            return "register"; // 다시 회원가입 페이지로
+            return "register";
         }
 
         try {
