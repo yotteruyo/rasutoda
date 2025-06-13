@@ -2,10 +2,9 @@ package com.pelosa.rasutoda.controller.view;
 
 import com.pelosa.rasutoda.domain.User;
 
-import com.pelosa.rasutoda.dto.PartyDto;
-import com.pelosa.rasutoda.dto.OttOption;
-import com.pelosa.rasutoda.dto.PartyCreateForm;
+import com.pelosa.rasutoda.dto.*;
 
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import com.pelosa.rasutoda.service.PartyServices;
 import com.pelosa.rasutoda.service.UserService;
@@ -16,11 +15,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
 import java.net.URLEncoder;
@@ -99,10 +100,70 @@ public class PageController {
         return "mypage";}
 
     @GetMapping("/mypage/profile-edit")
-    public String showProfileedit() {return "profile-edit";}
+    public String showProfileedit(Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginId = authentication.getName();
+
+        User currentUser = userService.findUserByLoginId(loginId)
+                .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
+
+        UserProfileUpdateDto profileDto = new UserProfileUpdateDto(
+                currentUser.getNickname(),
+                currentUser.getEmail(),
+                currentUser.getPhoneNumber()
+        );
+        model.addAttribute("profileDto", profileDto);
+
+        return "profile-edit";}
+
+    @PostMapping("/mypage/profile-update")
+    public String updateProfile(@Valid @ModelAttribute UserProfileUpdateDto profileDto, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", "회원 정보 수정에 실패했습니다. 입력 값을 확인해주세요.");
+            model.addAttribute("profileDto", profileDto);
+            return "profile-edit";
+        }
+
+        try {
+            userService.profileEdit(profileDto);
+            redirectAttributes.addFlashAttribute("successMessage", "회원 정보가 성공적으로 수정되었습니다.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/mypage/profile-edit";
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/mypage/profile-edit";
+        }
+        return "redirect:/mypage";
+    }
 
     @GetMapping("/mypage/password-change")
-    public String showPasswordChange() {return "password-change";}
+    public String showPasswordChange(Model model) {
+
+        model.addAttribute("passwordDto", new PasswordUpdateDto());
+
+
+        return "password-change";}
+
+    @PostMapping("/mypage/password-update")
+    public String updatePassword(@Valid @ModelAttribute PasswordUpdateDto passwordDto, BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", "회원 정보 수정에 실패했습니다. 입력 값을 확인해주세요.");
+            model.addAttribute("passwordDto", passwordDto);
+            return "password-change";
+        }
+
+        try {
+            userService.passwordUpdate(passwordDto);
+            redirectAttributes.addFlashAttribute("successMessage", "회원 정보가 성공적으로 수정되었습니다.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/mypage/password-change";
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "사용자 정보 처리 중 오류가 발생했습니다: " + e.getMessage());
+            return "redirect:/mypage/password-change";
+        }
+        return "redirect:/";}
 
 
     @GetMapping("/mypage/my-party/{partyId}")

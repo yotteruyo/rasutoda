@@ -1,13 +1,14 @@
 package com.pelosa.rasutoda.service;
 
+
 import com.pelosa.rasutoda.domain.User;
-//import com.pelosa.rasutoda.domain.UserAddress;
-import com.pelosa.rasutoda.domain.UserRole;
-//import com.pelosa.rasutoda.dto.UserAddressDto;
+import com.pelosa.rasutoda.dto.PasswordUpdateDto;
 import com.pelosa.rasutoda.dto.UserRegisterRequestDto;
+import com.pelosa.rasutoda.dto.UserProfileUpdateDto;
 import com.pelosa.rasutoda.repository.UserRepository;
-//import com.pelosa.rasutoda.repository.UserAddressRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +21,6 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-//    private final UserAddressRepository userAddressRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
@@ -49,18 +49,61 @@ public class UserService {
             .build();
         User savedUser = userRepository.save(user);
 
-//        UserAddressDto addressDto = requestDto.getAddress();
-//        if (addressDto != null){
-//            UserAddress address = UserAddress.builder()
-//                    .user(savedUser)
-//                    .postalCode(addressDto.getPostalCode())
-//                    .addressLine1(addressDto.getAddressLine1())
-//                    .addressLine2(addressDto.getAddressLine2())
-//                    .isDefault(true)
-//                    .build();
-//            userAddressRepository.save(address);
-//        }
 
         return savedUser.getId();
+    }
+
+    @Transactional
+    public void profileEdit(UserProfileUpdateDto profileDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+
+        User currentUser = userRepository.findByLoginId(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("로그인된 사용자를 찾을 수 없습니다."));
+
+
+        if (!currentUser.getNickname().equals(profileDto.getNickname())) {
+            if (userRepository.findByNickname(profileDto.getNickname()).isPresent()) {
+                throw new IllegalArgumentException("이미 사용중인 닉네임입니다.");
+            }
+        }
+
+        if (!currentUser.getEmail().equals(profileDto.getEmail())) {
+            if (userRepository.findByEmail(profileDto.getEmail()).isPresent()) {
+                throw new IllegalArgumentException("이미 사용중인 이메일입니다.");
+            }
+        }
+
+        currentUser.setNickname(profileDto.getNickname());
+        currentUser.setEmail(profileDto.getEmail());
+        currentUser.setPhoneNumber(profileDto.getPhoneNumber());
+        userRepository.save(currentUser);
+
+
+    }
+
+    @Transactional
+    public void passwordUpdate(PasswordUpdateDto passwordDto) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+
+        User currentUser = userRepository.findByLoginId(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("로그인된 사용자를 찾을 수 없습니다."));
+
+
+        if (!passwordEncoder.matches(passwordDto.getCurrentPassword(), currentUser.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+        }
+
+        if (!passwordDto.getNewPassword().equals(passwordDto.getConfirmNewPassword())) {
+            throw new IllegalArgumentException("새 비밀번호와 확인 비밀번호가 일치하지 않습니다.");
+        }
+
+        String encodedNewPassword = passwordEncoder.encode(passwordDto.getNewPassword());
+        currentUser.setPassword(encodedNewPassword);
+        userRepository.save(currentUser);
+
     }
 }
