@@ -8,10 +8,7 @@ import com.pelosa.rasutoda.domain.User;
 import com.pelosa.rasutoda.domain.ChatMessage;
 import com.pelosa.rasutoda.domain.MessageType;
 
-import com.pelosa.rasutoda.dto.ChatMessageDto;
-import com.pelosa.rasutoda.dto.PartyDto;
-import com.pelosa.rasutoda.dto.PartyCreateForm;
-import com.pelosa.rasutoda.dto.PartyMemberDto; // PartyMemberDto 임포트
+import com.pelosa.rasutoda.dto.*;
 
 import com.pelosa.rasutoda.repository.OttRepository;
 import com.pelosa.rasutoda.repository.PartyMemberRepository;
@@ -240,6 +237,33 @@ public class PartyServices {
     }
     // ====================================================================
 
+    @Transactional
+    public void updatePartyAccountInfo(PartyUpdateAccountInfoRequestDto accountInfoRequestDto, Long partyId) throws IllegalAccessException { // <-- 여기가 중요!
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        User currentUser = userRepository.findByLoginId(currentUsername)
+                .orElseThrow(() -> new IllegalArgumentException("로그인된 사용자를 찾을 수 없습니다."));
+
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 파티를 찾을 수 없습니다."));
+
+        if (!party.getCreator().equals(currentUser)) {
+            throw new IllegalAccessException("파티 정보를 수정할 권한이 없습니다. (파티 생성자만 수정 가능)");
+        }
+
+        party.setOttAccountId(accountInfoRequestDto.getOttAccountId());
+
+        String encryptedOttAccountPassword;
+        try {
+            encryptedOttAccountPassword = aes256Util.encrypt(accountInfoRequestDto.getOttAccountPassword());
+        } catch (Exception e) {
+            throw new IllegalStateException("OTT 계정 비밀번호 암호화에 실패했습니다.", e);
+        }
+
+        party.setOttAccountPassword(encryptedOttAccountPassword);
+        partyRepository.save(party);
+    }
 
     private PartyDto convertToDto(Party party) {
         long remainingDays = 0;

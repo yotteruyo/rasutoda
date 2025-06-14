@@ -165,6 +165,60 @@ public class PageController {
         }
         return "redirect:/";}
 
+    @GetMapping("/mypage/my-party/{partyId}/edit-account")
+    public String showPartyAccountEditForm(@PathVariable Long partyId, Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String loginId = authentication.getName();
+        User currentUser = userService.findUserByLoginId(loginId)
+                .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
+
+        PartyDto partyDetail = partyService.findMyPartyDetailForUser(partyId, currentUser)
+                .orElseThrow(() -> new IllegalArgumentException("파티를 찾을 수 없거나 수정 권한이 없습니다: " + partyId));
+
+        model.addAttribute("partyId", partyId);
+        model.addAttribute("editForm", new PartyUpdateAccountInfoRequestDto());
+        model.addAttribute("ottName", partyDetail.getOttName());
+
+        if (model.containsAttribute("errorMessage")) {
+            model.addAttribute("errorMessage", model.asMap().get("errorMessage"));
+        }
+        if (model.containsAttribute("successMessage")) {
+            model.addAttribute("successMessage", model.asMap().get("successMessage"));
+        }
+
+        return "partyUpdate";
+    }
+
+    @PostMapping("/api/party/update/{partyId}")
+    public String updatePartyAccountInfo(
+            @PathVariable Long partyId, @Valid @ModelAttribute PartyUpdateAccountInfoRequestDto accountInfoRequestDto,
+            BindingResult bindingResult, RedirectAttributes redirectAttributes, Model model) {
+
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "OTT 계정 정보 입력이 올바르지 않습니다.");
+            return "redirect:/mypage/my-party/" + partyId;
+        }
+
+        try {
+            partyService.updatePartyAccountInfo(accountInfoRequestDto, partyId);
+            redirectAttributes.addFlashAttribute("successMessage", "OTT 계정 정보가 성공적으로 업데이트되었습니다!");
+        } catch (IllegalAccessException e) { // PartyService에서 던지는 권한 오류
+            System.err.println("파티 정보 수정 권한 오류: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (IllegalArgumentException e) { // 파티를 찾을 수 없거나 다른 유효하지 않은 인자 오류
+            System.err.println("파티 정보 업데이트 인자 오류: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (IllegalStateException e) { // 암호화 실패 등 기타 상태 오류
+            System.err.println("파티 정보 업데이트 상태 오류: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) { // 예상치 못한 모든 예외
+            System.err.println("파티 정보 업데이트 중 알 수 없는 오류: " + e.getMessage());
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "파티 정보 업데이트 중 알 수 없는 오류가 발생했습니다.");
+        }
+
+        return "redirect:/mypage/my-party/" + partyId;
+    }
 
     @GetMapping("/mypage/my-party/{partyId}")
     public String showMyPartyDetail(@PathVariable Long partyId, Model model){
