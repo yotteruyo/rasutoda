@@ -14,29 +14,32 @@ import com.pelosa.rasutoda.repository.OttRepository;
 import com.pelosa.rasutoda.repository.PartyMemberRepository;
 import com.pelosa.rasutoda.repository.UserRepository;
 import com.pelosa.rasutoda.repository.PartyRepository;
-import com.pelosa.rasutoda.repository.ChatMessageRepository; // ChatMessageRepository 임포트
+import com.pelosa.rasutoda.repository.ChatMessageRepository;
+import com.pelosa.rasutoda.repository.PaymentRepository;
 
 import com.pelosa.rasutoda.util.AES256Util;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication; // 현재 로그인 유저 정보 가져오기 위함
-import org.springframework.security.core.context.SecurityContextHolder; // 현재 로그인 유저 정보 가져오기 위함
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList; // 필요시 임포트
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Map; // Map 임포트 ( PartyServices에는 Map 사용 로직은 없지만, 혹시 다른 곳에서 사용될까봐)
+import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true) // 클래스 레벨의 기본 트랜잭션 설정
+@Transactional(readOnly = true)
 public class PartyServices {
 
     private final PasswordEncoder passwordEncoder;
@@ -45,6 +48,7 @@ public class PartyServices {
     private final OttRepository ottRepository;
     private final PartyMemberRepository partyMemberRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final PaymentRepository paymentRepository;
     private final AES256Util aes256Util;
 
     public List<PartyDto> findAllParties() {
@@ -54,20 +58,19 @@ public class PartyServices {
     }
 
     public List<PartyDto> findPartiesByOtt(String ottName) {
-        // PartyRepository에 findByOttNameIgnoreCase(String ottName) 메서드 필요
-        return partyRepository.findByOttNameIgnoreCase(ottName).stream() // <-- 수정됨
+        return partyRepository.findByOttNameIgnoreCase(ottName).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     public List<PartyDto> findCreatedPartiesByCreator(User creator) {
-        return partyRepository.findByCreator(creator).stream() // PartyRepository에 findByCreator(User creator) 필요
+        return partyRepository.findByCreator(creator).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
 
     public List<PartyDto> findJoinedPartiesByUser(User user) {
-        return partyMemberRepository.findByMember(user).stream() // PartyMemberRepository에 findByMember(User member) 필요
+        return partyMemberRepository.findByMember(user).stream()
                 .map(PartyMember::getParty)
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
@@ -80,7 +83,7 @@ public class PartyServices {
 
     @Transactional(readOnly = true)
     public List<ChatMessageDto> getChatMessagesByPartyId(Long partyId) {
-        return chatMessageRepository.findByParty_IdOrderByCreatedAtAsc(partyId) // ChatMessageRepository에 findByParty_IdOrderByCreatedAtAsc 필요
+        return chatMessageRepository.findByParty_IdOrderByCreatedAtAsc(partyId)
                 .stream()
                 .map(ChatMessageDto::fromEntity)
                 .collect(Collectors.toList());
@@ -90,6 +93,8 @@ public class PartyServices {
     public ChatMessageDto saveChatMessage(Long partyId, ChatMessageDto messageDto) {
         User sender = userRepository.findByLoginId(SecurityContextHolder.getContext().getAuthentication().getName())
                 .orElseThrow(() -> new IllegalArgumentException("보낸 유저를 찾을 수 없습니다."));
+
+
 
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new IllegalArgumentException("Party not found with ID: " + partyId));
@@ -108,35 +113,28 @@ public class PartyServices {
     public Optional<PartyDto> findMyPartyDetailForUser(Long partyId, User currentUser){
         return partyRepository.findById(partyId)
                 .map(party -> {
-                    // 1. 현재 유저가 이 파티의 멤버인지 확인 (접근 권한)
                     boolean isMemberOfThisParty = party.getMembers().stream()
                             .anyMatch(pm -> pm.getMember().getId().equals(currentUser.getId()));
                     if (!isMemberOfThisParty) {
-                        return null; // 또는 throw new IllegalAccessException("접근 권한이 없습니다.");
+                        return null;
                     }
 
-                    // 2. 기본 PartyDto 변환 (기존 convertToDto 재활용)
                     PartyDto dto = convertToDto(party);
 
-                    // 3. myparty.html에 필요한 추가 정보 설정
-                    //    - OTT 계정 정보 (복호화)
                     try {
                         dto.setOttAccountId(party.getOttAccountId());
-                        dto.setOttAccountPassword(aes256Util.decrypt(party.getOttAccountPassword())); // 복호화된 평문 비밀번호 설정
+                        dto.setOttAccountPassword(aes256Util.decrypt(party.getOttAccountPassword()));
                     } catch (Exception e) {
                         System.err.println("OTT 계정 비밀번호 복호화 실패: " + e.getMessage());
-                        dto.setOttAccountPassword("복호화 오류"); // 또는 null
+                        dto.setOttAccountPassword("복호화 오류");
                     }
-                    //    - 다음 결제일 (예시: endDate 기준으로 월 단위로 계산)
                     LocalDate nextPaymentDate = party.getEndDate() != null ? party.getEndDate().plusMonths(1) : LocalDate.now().plusMonths(1);
                     dto.setNextPaymentDate(nextPaymentDate);
 
-                    //    - 현재 유저가 파티장인지 여부
                     dto.setIsLeader(party.getCreator().getId().equals(currentUser.getId()));
 
-                    //    - 파티 멤버 목록 (PartyMemberDto로 변환)
                     List<PartyMemberDto> memberDtos = party.getMembers().stream()
-                            .map(pm -> PartyMemberDto.builder() // PartyMemberDto 빌더 사용
+                            .map(pm -> PartyMemberDto.builder()
                                     .id(pm.getId())
                                     .nickname(pm.getMember().getNickname())
                                     .role(pm.getRole().name())
@@ -153,10 +151,21 @@ public class PartyServices {
     @Transactional
     public void createParty(PartyCreateForm form){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = authentication.getName(); // CustomUserDetailsService에서 설정한 loginId
-        User creator = userRepository.findByLoginId(currentUsername)
-                .orElseThrow(() -> new IllegalArgumentException("현재 로그인된 사용자를 찾을 수 없습니다."));
-        Ott ott = ottRepository.findByNameIgnoreCase(form.getOttName()) // PartyRepository에 findByNameIgnoreCase 필요
+
+        User creator;
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            String providerId = oauthToken.getName();
+            String provider = oauthToken.getAuthorizedClientRegistrationId();
+
+            creator = userRepository.findByProviderAndProviderId(provider, providerId)
+                    .orElseThrow(() -> new IllegalArgumentException("OAuth2 사용자(creator) 정보를 찾을 수 없습니다: " + providerId));
+        } else {
+            String currentUsername = authentication.getName();
+            creator = userRepository.findByLoginId(currentUsername)
+                    .orElseThrow(() -> new IllegalArgumentException("현재 로그인된 사용자(creator)를 찾을 수 없습니다: " + currentUsername));
+        }
+        Ott ott = ottRepository.findByNameIgnoreCase(form.getOttName())
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 OTT 서비스입니다: " + form.getOttName()));
 
         String encryptedOttAccountPassword;
@@ -178,7 +187,6 @@ public class PartyServices {
                 .endDate(LocalDate.now().plusDays(form.getRemainingDays()))
                 .ottAccountId(form.getOttAccountId())
                 .ottAccountPassword(encryptedOttAccountPassword)
-//                .content("새로운 " + form.getOttName() + " 파티입니다.") // content 필드에 값 할당 (Party 엔티티에 content 필드 필요)
                 .build();
 
         Party savedParty = partyRepository.save(party);
@@ -188,50 +196,77 @@ public class PartyServices {
                 .party(savedParty)
                 .member(creator)
                 .joinDate(LocalDate.now())
-                .role(PartyMemberRole.LEADER) // 파티장 역할 부여
+                .role(PartyMemberRole.LEADER)
                 .build();
 
         partyMemberRepository.save(initialMember);
-        savedParty.getMembers().add(initialMember); // 양방향 관계 일관성 유지
+        savedParty.getMembers().add(initialMember);
     }
 
-    // ====================================================================
-    // processPartyJoinPaymentSuccess 메서드 (중괄호 문제 해결)
-    // ====================================================================
-    @Transactional // DB 변경이 있으므로 @Transactional
+
+    @Transactional
+    public void disbandParty(Long partyId, User currentUser) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new IllegalArgumentException("해체하려는 파티를 찾을 수 없습니다. ID: " + partyId));
+        if (!party.getCreator().getId().equals(currentUser.getId())) {
+            throw new IllegalStateException("파티장만 파티를 해체할 수 있습니다.");
+        }
+        if (party.getMembers().size() > 1) {
+            throw new IllegalStateException("파티에 참여 중인 다른 파티원이 있어 파티를 해체할 수 없습니다. 모든 파티원이 탈퇴해야 해체 가능합니다.");
+        }
+        chatMessageRepository.deleteByPartyId(party.getId());
+        paymentRepository.deleteByPartyId(party.getId());
+        partyRepository.delete(party);
+        System.out.println("파티 " + party.getTitle() + " (ID: " + party.getId() + ")가 성공적으로 해체되었습니다.");
+    }
+
+
+    @Transactional
+    public void leaveParty(Long partyId, User currentUser) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new IllegalArgumentException("탈퇴하려는 파티를 찾을 수 없습니다. ID: " + partyId));
+        PartyMember partyMemberToRemove = partyMemberRepository.findByPartyAndMember(party, currentUser)
+                .orElseThrow(() -> new IllegalStateException("해당 파티에 참여하고 있지 않습니다."));
+
+        if (partyMemberToRemove.getRole() == PartyMemberRole.LEADER) {
+            throw new IllegalStateException("파티장은 파티를 탈퇴할 수 없습니다. 파티 해체 기능을 이용해주세요.");
+        }
+
+        chatMessageRepository.deleteByPartyIdAndSenderId(partyId, currentUser.getId());
+
+        partyMemberRepository.delete(partyMemberToRemove);
+
+        party.setCurrentMembers(party.getCurrentMembers() - 1);
+
+        System.out.println("사용자 " + currentUser.getLoginId() + "가 파티 " + party.getTitle() + "에서 성공적으로 탈퇴했습니다.");
+    }
+
+
+    @Transactional
     public void processPartyJoinPaymentSuccess(Long partyId, User currentUser, String paymentKey, Long amount) {
-        // 1. 파티 정보 조회
         Party party = partyRepository.findById(partyId)
                 .orElseThrow(() -> new IllegalArgumentException("결제된 파티를 찾을 수 없습니다. ID: " + partyId));
 
-        // 2. 현재 유저가 이미 파티 멤버인지 확인 (중복 가입 방지)
         boolean alreadyJoined = party.getMembers().stream()
                 .anyMatch(pm -> pm.getMember().getId().equals(currentUser.getId()));
         if (alreadyJoined) {
             throw new IllegalStateException("이미 파티에 참여 중인 사용자입니다.");
         }
 
-        // 3. 파티 멤버 수 확인 (정원 초과 방지)
-        // 이 if문은 이미 참여한 사용자가 아니면 실행되어야 합니다.
         if (party.getCurrentMembers() >= party.getMaxMembers()) {
             throw new IllegalStateException("파티 정원이 가득 찼습니다.");
         }
 
-        // 4. 새로운 PartyMember 생성 (역할: MEMBER)
         PartyMember newMember = PartyMember.builder()
                 .party(party)
                 .member(currentUser)
                 .joinDate(LocalDate.now())
-                .role(PartyMemberRole.MEMBER) // 일반 멤버 역할 부여
+                .role(PartyMemberRole.MEMBER)
                 .build();
 
-        // 5. PartyMember 저장
         partyMemberRepository.save(newMember);
 
-        // 6. Party의 현재 멤버 수 업데이트
         party.setCurrentMembers(party.getCurrentMembers() + 1); // @Transactional 덕분에 변경 감지되어 자동 저장
-
-        // TODO: (선택 사항) 결제 정보 저장 (PaymentsService에서 이미 수행되므로 여기서는 호출하지 않습니다.)
 
         System.out.println("사용자 " + currentUser.getLoginId() + "가 파티 " + party.getTitle() + "에 성공적으로 참여했습니다.");
     }

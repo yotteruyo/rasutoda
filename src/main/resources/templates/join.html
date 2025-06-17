@@ -341,11 +341,6 @@
   //     /*]]>*/
   // </script>
 //
-// 지금은 `PaymentController.handlePaymentSuccessCallback`이 `ResponseEntity`를 반환하므로,
-// 토스 위젯은 이 응답을 받아 처리하는 것이 아니라, `successUrl`로 브라우저를 **GET 리다이렉트**합니다.
-// 따라서 `/payment/success` URL은 **페이지를 직접 반환하는 `@Controller`의 `@GetMapping` 매핑**이 되어야 합니다.
-// 이것은 `PageController`에서 이전에 삭제했던 `handlePaymentSuccess`를 다시 만들어야 한다는 의미입니다.
-
 /*]]>*/
 </script>
 

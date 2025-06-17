@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>회원 추가 정보 입력</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}" />
+    <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+        /* 기본 스타일 (다른 페이지와 동일) */
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,.04);
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #007bff !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            font-weight: 500;
+            color: #495057 !important;
+            margin-left: 1.5rem;
+        }
+        .nav-link:hover {
+            color: #007bff !important;
+        }
+        .page-header {
+            background-color: #ffffff;
+            padding: 3rem 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,.04);
+            margin-bottom: 2rem;
+        }
+        .page-header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #343a40;
+        }
+        .page-header p {
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+        /* 공통 섹션 카드 스타일 */
+        .section-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .section-card h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #343a40;
+            border-bottom: 1px solid #f0f2f5;
+            padding-bottom: 0.75rem;
+        }
+
+        /* 파티 정보 상세 카드 */
+        .party-detail-card .ott-logo {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            border: 1px solid #e9ecef;
+            display: block;
+            margin: 0 auto 1.5rem auto;
+        }
+        .party-detail-card .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e9ecef;
+        }
+        .party-detail-card .info-row:last-child { border-bottom: none; }
+        .party-detail-card .info-label { font-weight: 600; color: #495057; }
+        .party-detail-card .info-value { color: #343a40; }
+        .party-detail-card .account-info .btn-toggle-visibility {
+            background: none;
+            border: none;
+            color: #007bff;
+            padding: 0;
+            margin-left: 0.5rem;
+            font-size: 0.9em;
+        }
+        .party-detail-card .account-info .masked {
+            filter: blur(4px); /* 내용을 가리는 시각 효과 */
+            user-select: none; /* 드래그 방지 */
+        }
+        .party-detail-card .next-payment-info {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            color: #28a745;
+        }
+        .party-detail-card .next-payment-info small {
+            font-weight: normal;
+            color: #6c757d;
+        }
+
+        /* 파티원 목록 */
+        .member-list-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px dashed #e9ecef;
+            color: #555;
+        }
+        .member-list-item:last-child { border-bottom: none; }
+        .member-list-item i { margin-right: 0.75rem; color: #007bff; }
+        .member-list-item .member-name { flex-grow: 1; }
+        .member-list-item .member-role { font-weight: 600; color: #495057; font-size: 0.9em; }
+
+        /* 채팅 섹션 */
+        .chat-section {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .chat-section h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #343a40;
+            border-bottom: 1px solid #f0f2f5;
+            padding-bottom: 0.75rem;
+        }
+        .chat-area {
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-input-group { display: flex; }
+        .chat-input {
+            flex-grow: 1;
+            border-radius: 0.5rem; /* 파일 버튼 없어지므로 다시 둥글게 */
+            border-right: 1px solid #dee2e6; /* 파일 버튼 없어지므로 다시 테두리 */
+        }
+        .btn-chat-send {
+            border-radius: 0.5rem; /* 파일 버튼 없어지므로 다시 둥글게 */
+            margin-left: 0.5rem; /* 입력창과 버튼 사이 간격 */
+        }
+
+        /* 채팅 메시지 스타일 */
+        .message-item {
+            margin-bottom: 0.5rem;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+        .message-item .message-author {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        .message-item .message-content {
+            padding: 0.6rem 1rem;
+            border-radius: 1rem;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .message-item .message-time {
+            font-size: 0.75rem;
+            color: #adb5bd;
+            margin-top: 0.25rem;
+        }
+        .my-message {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+        .my-message .message-content {
+            background-color: #007bff;
+            color: white;
+            border-bottom-right-radius: 0.3rem;
+        }
+        .other-message {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+        .other-message .message-content {
+            background-color: #e9ecef;
+            color: #343a40;
+            border-bottom-left-radius: 0.3rem;
+        }
+
+        /* 푸터 (다른 페이지와 동일) */
+        .footer {
+            background-color: #343a40;
+            color: #dee2e6;
+            padding: 3rem 0;
+            margin-top: auto;
+            font-size: 0.9rem;
+        }
+        .footer a {
+            color: #adb5bd;
+            text-decoration: none;
+            margin-right: 1rem;
+        }
+        .footer a:hover {
+            color: #ffffff;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-6">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h2>회원 추가 정보 입력</h2>
+                </div>
+                <div class="card-body p-4">
+                    <div id="alertMessage" class="alert d-none" role="alert">
+                    </div>
+
+                    <p class="text-muted text-center mb-4">소셜 로그인 시 필수 정보가 부족합니다.<br>추가 정보를 입력하여 회원가입을 완료해주세요.</p>
+
+                    <form th:action="@{/api/register/oauth2-complete}" method="post" id="additionalInfoForm">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">이메일 (소셜 계정)</label>
+                            <input type="email" class="form-control" id="email" th:value="${oauth2Email}" readonly disabled>
+                            <small class="form-text text-muted">이메일은 소셜 계정을 통해 자동 입력되며 수정할 수 없습니다.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="nickname" class="form-label">닉네임</label>
+                            <input type="text" class="form-control" id="nickname" name="nickname" th:value="${additionalInfoDto?.nickname}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phoneNumberPart1" class="form-label">휴대전화 번호</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control text-center" id="phoneNumberPart1" maxlength="3" placeholder="010" required>
+                                <span class="input-group-text">-</span>
+                                <input type="text" class="form-control text-center" id="phoneNumberPart2" maxlength="4" placeholder="1234" required>
+                                <span class="input-group-text">-</span>
+                                <input type="text" class="form-control text-center" id="phoneNumberPart3" maxlength="4" placeholder="5678" required>
+                            </div>
+                            <input type="hidden" id="phoneNumber" name="phoneNumber">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-4">회원가입 완료</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('additionalInfoForm').addEventListener('submit', async function(event) {
+        event.preventDefault(); // 기본 폼 제출 방지
+
+        const part1 = document.getElementById('phoneNumberPart1').value;
+        const part2 = document.getElementById('phoneNumberPart2').value;
+        const part3 = document.getElementById('phoneNumberPart3').value;
+        document.getElementById('phoneNumber').value = part1 + '-' + part2 + '-' + part3;
+
+        // 폼 데이터를 JSON으로 변환
+        const formData = new FormData(this);
+        const requestData = {};
+        formData.forEach((value, key) => {
+            // CSRF 토큰 필드는 제외하고 실제 폼 데이터만 JSON으로 변환
+            if (key !== '_csrf' && key !== '_csrf_header') {
+                requestData[key] = value;
+            }
+        });
+
+        // ====================================================================
+        // CSRF 토큰 가져오기 (meta 태그에서 가져오는 것이 가장 확실)
+        // ====================================================================
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+        const csrfHeaderName = document.querySelector('meta[name="_csrf_header"]').content;
+
+        const alertMessageDiv = document.getElementById('alertMessage');
+        alertMessageDiv.classList.remove('alert-success', 'alert-danger');
+        alertMessageDiv.classList.add('d-none');
+
+        try {
+            const response = await fetch(this.action, { // form action 속성의 URL 사용
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeaderName]: csrfToken // <-- CSRF 토큰 헤더 추가
+                },
+                body: JSON.stringify(requestData) // JSON 형태로 전송
+            });
+
+            const responseData = await response.json(); // 서버 응답을 JSON으로 파싱
+
+            if (response.ok) { // HTTP 상태 코드가 200번대일 경우 (성공)
+                alertMessageDiv.classList.remove('d-none');
+                alertMessageDiv.classList.add('alert-success');
+                alertMessageDiv.textContent = responseData.message || '회원가입이 완료되었습니다!';
+
+                // 성공 시 리다이렉트 URL로 이동
+                if (responseData.redirectUrl) {
+                    window.location.href = responseData.redirectUrl; // 받은 URL로 리다이렉트
+                } else {
+                    this.reset(); // 리다이렉트 URL이 없으면 폼 초기화
+                }
+            } else { // HTTP 상태 코드가 200번대가 아닐 경우 (실패)
+                alertMessageDiv.classList.remove('d-none');
+                alertMessageDiv.classList.add('alert-danger');
+                alertMessageDiv.textContent = responseData.message || '회원가입 실패. 입력 값을 확인해주세요.';
+            }
+        } catch (error) {
+            console.error('추가 정보 저장 중 오류:', error);
+            alertMessageDiv.classList.remove('d-none');
+            alertMessageDiv.classList.add('d-danger');
+            alertMessageDiv.textContent = '추가 정보 저장 중 네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        }
+    });
+
+    // 전화번호 자동 이동 (register.html과 동일)
+    document.getElementById('phoneNumberPart1').addEventListener('input', function(e) {
+        if (e.target.value.length === e.target.maxLength) {
+            document.getElementById('phoneNumberPart2').focus();
+        }
+    });
+    document.getElementById('phoneNumberPart2').addEventListener('input', function(e) {
+        if (e.target.value.length === e.target.maxLength) {
+            document.getElementById('phoneNumberPart3').focus();
+        }
+    });
+
+    // 초기값 설정
+    document.addEventListener('DOMContentLoaded', function() {
+        // CSRF 메타 태그가 DOMContentLoaded 시점에 확실히 존재하도록 보장
+        const csrfMeta = document.querySelector('meta[name="_csrf"]');
+        const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+        if (!csrfMeta || !csrfHeaderMeta) {
+            console.error("CSRF meta tags not found! Ensure _csrf and _csrf_header are correctly rendered by Thymeleaf.");
+        }
+
+        const additionalInfoDto = /*[[${additionalInfoDto}]]*/ null;
+        if (additionalInfoDto && additionalInfoDto.phoneNumber) {
+            const phoneParts = additionalInfoDto.phoneNumber.split('-');
+            document.getElementById('phoneNumberPart1').value = phoneParts[0] || '';
+            document.getElementById('phoneNumberPart2').value = phoneParts[1] || '';
+            document.getElementById('phoneNumberPart3').value = phoneParts[2] || '';
+        }
+    });
+</script>
+</body>
+</html>
