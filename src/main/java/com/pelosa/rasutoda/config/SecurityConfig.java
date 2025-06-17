@@ -30,7 +30,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/mypage",
                                 "/mypage/**",
-                                "/party-create"
+                                "/party-create",
+                                "/api/contact"
                         ).authenticated()
 
                         .requestMatchers(

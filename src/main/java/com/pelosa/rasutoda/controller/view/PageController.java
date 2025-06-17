@@ -59,7 +59,7 @@ public class PageController {
         model.addAttribute("party", partyDto);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String loginId = authentication.getName();;
+        String loginId = authentication.getName();
         User currentUser = userService.findUserByLoginId(loginId)
                 .orElseThrow(() -> new IllegalStateException("로그인된 사용자를 찾을 수 없습니다: " + loginId));
         model.addAttribute("currentUser", currentUser);
